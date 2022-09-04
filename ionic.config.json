@@ -1,5 +1,7 @@
 {
   "name": "keep-or-sweep",
-  "integrations": {},
+  "integrations": {
+    "capacitor": {}
+  },
   "type": "vue"
 }

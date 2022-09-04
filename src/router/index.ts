@@ -1,16 +1,16 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import HomePage from '../views/HomePage.vue'
+import Swipe from '../views/SwipePage.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/swipe'
   },
   {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
+    path: '/swipe',
+    name: 'Keep or Sweep',
+    component: Swipe
   }
 ]
 
