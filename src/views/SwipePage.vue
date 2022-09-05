@@ -31,11 +31,11 @@ import ImageView from "./ImageView.vue";
 const imageView = ref();
 
 function deleteImage() {
-    imageView.value.deleteImage();
+    imageView.value.deleteImage(true);
 }
 
 function keepImage() {
-    imageView.value.keepImage();
+    imageView.value.keepImage(true);
 }
 
 </script>

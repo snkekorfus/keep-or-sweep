@@ -30,10 +30,10 @@ function setNewImage(deleted: boolean) {
     comeUpAnimation!.play();
 
     if (deleted) {
-        leftRejectAnimation!.stop();
+        leftSwipeAnimation!.stop();
     }
     else {
-        rightRejectAnimation!.stop();
+        rightSwipeAnimation!.stop();
     }
 }
 
@@ -52,12 +52,20 @@ function updateCache() {
     }
 }
 
-function deleteImage() {
-    leftRejectAnimation!.play();
+function deleteImage(buttonPressed: boolean) {
+    if (buttonPressed) {
+        leftSwipeAnimation!
+            .onFinish(() => { setNewImage(true) }, callbackOptions)    
+            .play();
+    }
 }
 
-function keepImage() {
-    rightRejectAnimation!.play();
+function keepImage(buttonPressed: boolean) {
+    if (buttonPressed) {
+        rightSwipeAnimation!
+            .onFinish(() => { setNewImage(false) }, callbackOptions)
+            .play();
+    }
 }
 
 // Define Animations and gestures
@@ -67,42 +75,28 @@ const windowHeight = window.innerHeight;
 let started = false;
 let direction: boolean | null = null;
 
-// Standalone animations for the buttons
-let leftRejectAnimation: Animation = createAnimation() 
-    .duration(200)
-    .iterations(1)
-    .fromTo("transform", "translateX(0px)", `translateX(-${windowWidth * 1.5}px) rotate(-20deg)`)
-    .onFinish(() => setNewImage(true));
-
-let rightRejectAnimation: Animation = createAnimation() 
-    .duration(200)
-    .iterations(1)
-    .fromTo("transform", "translateX(0px)", `translateX(${windowWidth * 1.5}px) rotate(20deg)`)
-    .onFinish(() => setNewImage(false));
+// Used to disable the onFinish of the animations
+const callbackOptions: AnimationCallbackOptions = {
+                oneTimeCallback: true,
+            }
 
 
-// Animations used for the gesture
 let leftSwipeAnimation: Animation = createAnimation() 
     .duration(200)
     .iterations(1)
-    .fromTo("transform", "translateX(0px)", `translateX(-${windowWidth * 1.5}px) rotate(-20deg)`);
+    .fromTo("transform", "translateX(0px)", `translateX(-${windowWidth * 1.5}px) rotate(-20deg)`)
 
 let rightSwipeAnimation: Animation = createAnimation() 
     .duration(200)
     .iterations(1)
-    .fromTo("transform", "translateX(0px)", `translateX(${windowWidth * 1.5}px) rotate(20deg)`);
-
-// Animation used for the buttons and the gesture    
+    .fromTo("transform", "translateX(0px)", `translateX(${windowWidth * 1.5}px) rotate(20deg)`)
+  
 let comeUpAnimation: Animation = createAnimation()
     .duration(200)
     .iterations(1)
     .fromTo("transform", `translateY(${windowHeight * 1.5}px)`, `translateY(0px)`);
 
 onMounted(() => {
-    leftRejectAnimation = leftRejectAnimation.addElement(image_container.value);
-
-    rightRejectAnimation = rightRejectAnimation.addElement(image_container.value);
-
     leftSwipeAnimation = leftSwipeAnimation.addElement(image_container.value);
 
     rightSwipeAnimation = rightSwipeAnimation.addElement(image_container.value);
@@ -148,14 +142,9 @@ onMounted(() => {
             swipeGesture.enable(false);
 
             const step = getStep(detail, direction!);
-            let shouldComplete = false;
-            shouldComplete = step > 0.5;
+            const shouldComplete = step > 0.5;
 
             console.log(shouldComplete);
-
-            const callbackOptions: AnimationCallbackOptions = {
-                oneTimeCallback: true,
-            }
 
             if (!direction) {
                 leftSwipeAnimation!
@@ -163,11 +152,11 @@ onMounted(() => {
                     .onFinish(() => { 
                         swipeGesture.enable(true);
                         if (shouldComplete) {
-                            console.log("Moin");
-                            console.log(shouldComplete);
-                            comeUpAnimation!.play();
+                            deleteImage(true);
+                            setNewImage(true);
+                        } else {
+                            leftSwipeAnimation!.stop();
                         }
-                        leftSwipeAnimation!.stop();
                     }, callbackOptions);
             }
             else if (direction) {
@@ -175,11 +164,14 @@ onMounted(() => {
                     .progressEnd((shouldComplete) ? 1 : 0, step)
                     .onFinish(() => { 
                         swipeGesture.enable(true);
+                        console.log(shouldComplete);
                         if (shouldComplete) {
-                            comeUpAnimation!.play();
+                            keepImage(false);
+                            setNewImage(false);
+                        } else {
+                            rightSwipeAnimation!.stop();
                         }
-                        rightSwipeAnimation!.stop();
-                    });
+                    }, callbackOptions);
                 
             }
 
