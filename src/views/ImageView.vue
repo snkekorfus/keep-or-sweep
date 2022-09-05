@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, defineExpose, onBeforeMount } from '@vue/runtime-core';
-import { createAnimation, Animation } from '@ionic/vue';
+import { createAnimation, Animation, AnimationCallbackOptions, createGesture, GestureDetail } from '@ionic/vue';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 
@@ -23,17 +23,17 @@ const imageCache = [new Image(), new Image(), new Image()];
 let cachePosition = 0;
 
 function setNewImage(deleted: boolean) {
-    console.log("setNewImage called");
     fixedPhotoUri.value = imageCache[cachePosition].src;
 
     updateCache();
     
     comeUpAnimation!.play();
+
     if (deleted) {
-        leftSwipeAnimation!.stop();
+        leftRejectAnimation!.stop();
     }
     else {
-        rightSwipeAnimation?.stop();
+        rightRejectAnimation!.stop();
     }
 }
 
@@ -53,12 +53,152 @@ function updateCache() {
 }
 
 function deleteImage() {
-    leftSwipeAnimation!.play();
+    leftRejectAnimation!.play();
 }
 
 function keepImage() {
-    rightSwipeAnimation!.play();
+    rightRejectAnimation!.play();
 }
+
+// Define Animations and gestures
+const image_container = ref(null);
+const windowWidth = window.innerWidth;
+const windowHeight = window.innerHeight;
+let started = false;
+let direction: boolean | null = null;
+
+// Standalone animations for the buttons
+let leftRejectAnimation: Animation = createAnimation() 
+    .duration(200)
+    .iterations(1)
+    .fromTo("transform", "translateX(0px)", `translateX(-${windowWidth * 1.5}px) rotate(-20deg)`)
+    .onFinish(() => setNewImage(true));
+
+let rightRejectAnimation: Animation = createAnimation() 
+    .duration(200)
+    .iterations(1)
+    .fromTo("transform", "translateX(0px)", `translateX(${windowWidth * 1.5}px) rotate(20deg)`)
+    .onFinish(() => setNewImage(false));
+
+
+// Animations used for the gesture
+let leftSwipeAnimation: Animation = createAnimation() 
+    .duration(200)
+    .iterations(1)
+    .fromTo("transform", "translateX(0px)", `translateX(-${windowWidth * 1.5}px) rotate(-20deg)`);
+
+let rightSwipeAnimation: Animation = createAnimation() 
+    .duration(200)
+    .iterations(1)
+    .fromTo("transform", "translateX(0px)", `translateX(${windowWidth * 1.5}px) rotate(20deg)`);
+
+// Animation used for the buttons and the gesture    
+let comeUpAnimation: Animation = createAnimation()
+    .duration(200)
+    .iterations(1)
+    .fromTo("transform", `translateY(${windowHeight * 1.5}px)`, `translateY(0px)`);
+
+onMounted(() => {
+    leftRejectAnimation = leftRejectAnimation.addElement(image_container.value);
+
+    rightRejectAnimation = rightRejectAnimation.addElement(image_container.value);
+
+    leftSwipeAnimation = leftSwipeAnimation.addElement(image_container.value);
+
+    rightSwipeAnimation = rightSwipeAnimation.addElement(image_container.value);
+
+    comeUpAnimation = comeUpAnimation.addElement(image_container.value);
+
+    const swipeGesture = createGesture({
+        el: image_container.value,
+        onMove: (detail) => {
+            if (!started) {
+                started = true;
+            }
+            if (direction == null && detail.deltaX < 0) {
+                direction = false;
+                leftSwipeAnimation!.progressStart();
+            }
+            else if (direction == null && detail.deltaX > 0) {
+                direction = true;
+                rightSwipeAnimation!.progressStart();
+            }
+            else if (!direction && detail.deltaX > 0) {
+                leftSwipeAnimation!.progressEnd(0, 0);
+                leftSwipeAnimation!.stop();
+                direction = null;
+            }
+            else if (direction && detail.deltaX < 0) {
+                rightSwipeAnimation!.progressEnd(0, 0);
+                rightSwipeAnimation!.stop();
+                direction = null;
+            }
+            else if (!direction && detail.deltaX < 0) {
+                leftSwipeAnimation!.progressStep(getStep(detail, direction));
+            }
+            else if (direction && detail.deltaX > 0) {
+                rightSwipeAnimation!.progressStep(getStep(detail, direction));
+            }
+        
+        },
+        onEnd: (detail) => {
+            console.log("We are in the endgame now");
+            if (!started) { return; }
+            
+            swipeGesture.enable(false);
+
+            const step = getStep(detail, direction!);
+            let shouldComplete = false;
+            shouldComplete = step > 0.5;
+
+            console.log(shouldComplete);
+
+            const callbackOptions: AnimationCallbackOptions = {
+                oneTimeCallback: true,
+            }
+
+            if (!direction) {
+                leftSwipeAnimation!
+                    .progressEnd((shouldComplete) ? 1 : 0, step)
+                    .onFinish(() => { 
+                        swipeGesture.enable(true);
+                        if (shouldComplete) {
+                            console.log("Moin");
+                            console.log(shouldComplete);
+                            comeUpAnimation!.play();
+                        }
+                        leftSwipeAnimation!.stop();
+                    }, callbackOptions);
+            }
+            else if (direction) {
+                rightSwipeAnimation!
+                    .progressEnd((shouldComplete) ? 1 : 0, step)
+                    .onFinish(() => { 
+                        swipeGesture.enable(true);
+                        if (shouldComplete) {
+                            comeUpAnimation!.play();
+                        }
+                        rightSwipeAnimation!.stop();
+                    });
+                
+            }
+
+            started = false;
+            direction = null;
+        }
+    });
+
+    swipeGesture.enable(true);
+});
+
+// Helper for animation
+function getStep(detail: GestureDetail, direction: boolean): number {
+    if (direction){
+        return Math.max(0, Math.min(detail.deltaX / windowWidth, 1));
+    }
+    return Math.max(0, Math.min((detail.deltaX * -1) / windowWidth, 1));    
+}
+
 
 onBeforeMount(async () => {
     const photosToCheckPreferenceValue = await Preferences.get({ key: 'PHOTOS_TO_CHECK' });
@@ -77,37 +217,6 @@ onBeforeMount(async () => {
     fixedPhotoUri.value = imageCache[0].src;
 
     updateCache();
-});
-
-// Define Animations
-const image_container = ref(null);
-const windowWidth = window.innerWidth;
-const windowHeight = window.innerHeight;
-
-let leftSwipeAnimation: Animation | null = null;
-let rightSwipeAnimation: Animation | null = null;
-let comeUpAnimation: Animation | null = null;
-
-onMounted(() => {
-    leftSwipeAnimation = createAnimation() 
-        .addElement(image_container.value)
-        .duration(200)
-        .iterations(1)
-        .fromTo("transform", "translateX(0px)", `translateX(-${windowWidth * 1.5}px) rotate(-20deg)`)
-        .onFinish(() => setNewImage(true))
-
-    rightSwipeAnimation = createAnimation() 
-        .addElement(image_container.value)
-        .duration(200)
-        .iterations(1)
-        .fromTo("transform", "translateX(0px)", `translateX(${windowWidth * 1.5}px) rotate(20deg)`)
-        .onFinish(() => setNewImage(false))
-
-    comeUpAnimation = createAnimation()
-        .addElement(image_container.value)
-        .duration(200)
-        .iterations(1)
-        .fromTo("transform", `translateY(${windowHeight * 1.5}px)`, `translateY(0px)`)
 });
 
 </script>
