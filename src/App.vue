@@ -1,6 +1,8 @@
 <template>
   <ion-app>
-    <loading-view :isLoading="isLoading" @finished-loading="() => isLoading = false" />
+    <Transition name="fade">
+      <loading-view v-if="isLoading" @finished-loading="isLoading = false" />
+    </Transition>
     <ion-router-outlet v-if="!isLoading" />
   </ion-app>
 </template>
@@ -22,3 +24,15 @@ export default defineComponent({
   }
 });
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

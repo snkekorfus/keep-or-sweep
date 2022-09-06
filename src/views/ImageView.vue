@@ -26,15 +26,17 @@ function setNewImage(deleted: boolean) {
     fixedPhotoUri.value = imageCache[cachePosition].src;
 
     updateCache();
-    
-    comeUpAnimation!.play();
-
-    if (deleted) {
-        leftSwipeAnimation!.stop();
-    }
-    else {
-        rightSwipeAnimation!.stop();
-    }
+    comeUpAnimation!.stop();
+    comeUpAnimation!
+        .onFinish(() => {
+            if (deleted) {
+                leftSwipeAnimation!.stop();
+            }
+            else {
+                rightSwipeAnimation!.stop();
+            }
+        }, callbackOptions)
+        .play();
 }
 
 function updateCache() {
@@ -57,6 +59,8 @@ function deleteImage(buttonPressed: boolean) {
         leftSwipeAnimation!
             .onFinish(() => { setNewImage(true) }, callbackOptions)    
             .play();
+    } else {
+        setNewImage(true);
     }
 }
 
@@ -65,6 +69,8 @@ function keepImage(buttonPressed: boolean) {
         rightSwipeAnimation!
             .onFinish(() => { setNewImage(false) }, callbackOptions)
             .play();
+    } else {
+        setNewImage(false);
     }
 }
 
@@ -79,7 +85,6 @@ let direction: boolean | null = null;
 const callbackOptions: AnimationCallbackOptions = {
                 oneTimeCallback: true,
             }
-
 
 let leftSwipeAnimation: Animation = createAnimation() 
     .duration(200)
@@ -142,35 +147,30 @@ onMounted(() => {
             swipeGesture.enable(false);
 
             const step = getStep(detail, direction!);
-            const shouldComplete = step > 0.5;
-
-            console.log(shouldComplete);
+            const shouldComplete = step > 0.35;
 
             if (!direction) {
                 leftSwipeAnimation!
                     .progressEnd((shouldComplete) ? 1 : 0, step)
                     .onFinish(() => { 
-                        swipeGesture.enable(true);
                         if (shouldComplete) {
-                            deleteImage(true);
-                            setNewImage(true);
+                            deleteImage(false);
                         } else {
                             leftSwipeAnimation!.stop();
                         }
+                        swipeGesture.enable(true);
                     }, callbackOptions);
             }
             else if (direction) {
                 rightSwipeAnimation!
                     .progressEnd((shouldComplete) ? 1 : 0, step)
                     .onFinish(() => { 
-                        swipeGesture.enable(true);
-                        console.log(shouldComplete);
                         if (shouldComplete) {
                             keepImage(false);
-                            setNewImage(false);
                         } else {
                             rightSwipeAnimation!.stop();
                         }
+                        swipeGesture.enable(true);
                     }, callbackOptions);
                 
             }
