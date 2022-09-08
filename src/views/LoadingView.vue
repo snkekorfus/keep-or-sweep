@@ -15,16 +15,18 @@
 <script setup lang="ts">
 import { defineProps, onMounted, defineEmits, ref } from '@vue/runtime-core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Preferences } from '@capacitor/preferences';
+import { GetResult, Preferences } from '@capacitor/preferences';
 
 import { IonCol, IonGrid, IonRow } from '@ionic/vue';
+
+import { PhotoFile } from '@/common/types';
 
 const props = defineProps(['isLoading']);
 const emit = defineEmits(['finishedLoading']);
 const currentDirectory = ref("")
 
-async function getListOfImages(startDirectories: string[]): Promise<string[]> {
-    var images: string[] = []
+async function getListOfImages(startDirectories: string[]): Promise<PhotoFile[]> {
+    var images: PhotoFile[] = []
 
     for (let dir in startDirectories) {
         setDirectoryString(startDirectories[dir]);
@@ -52,14 +54,15 @@ async function getListOfImages(startDirectories: string[]): Promise<string[]> {
         });
 
         images.push(...files.map((file) => {
-            return file.uri;
+            return {"name": file.name, "uri": file.uri};
         }));
         } catch (error) {
             console.log("Error for dir: " + dir)
         }
     }
 
-    return images
+    console.log(images);
+    return images;
 }
 
 function setDirectoryString(dir: string) {
@@ -72,14 +75,20 @@ function setDirectoryString(dir: string) {
 }
 
 onMounted(async () => {
-    let images = await getListOfImages(["Android", "Pictures", "DCIM", "Download"]);
+    let images: PhotoFile[] = await getListOfImages(["Android", "Pictures", "DCIM", "Download"]);
 
-    const currentPhotosToCheckPreference = await Preferences.get({ key: 'PHOTOS_TO_CHECK' });
-    let currentPhotosToCheckPreferenceValues = JSON.parse(currentPhotosToCheckPreference.value || "[]");
+    const currentPhotosToCheckPreference: GetResult = await Preferences.get({ key: 'PHOTOS_TO_CHECK' });
+    let currentPhotosToCheckPreferenceValues: PhotoFile[] = JSON.parse(currentPhotosToCheckPreference.value || "[]");
+
+    console.log(currentPhotosToCheckPreferenceValues);
 
     images = images.filter((image) => {
-        return !currentPhotosToCheckPreferenceValues.includes(image);
+       return !currentPhotosToCheckPreferenceValues.map((currentPhoto) => {
+            return currentPhoto.uri;
+        }).includes(image.uri);
     });
+
+    console.log(images);
 
     currentPhotosToCheckPreferenceValues = currentPhotosToCheckPreferenceValues.concat(images);
 

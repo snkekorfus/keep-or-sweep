@@ -13,19 +13,45 @@ import { createAnimation, Animation, AnimationCallbackOptions, createGesture, Ge
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 
+import { PhotoFile } from '@/common/types';
+import { PhotoCache } from '@/common/PhotoCache';
+
 defineExpose({ setNewImage, deleteImage, keepImage });
 
 const fixedPhotoUri = ref<string | null>(null);
-const photosToCheck = ref<string[]>([]);
+let photosToCheck: PhotoFile[] = [];
 
-let photoToCheck: string[] = [];
-const imageCache = [new Image(), new Image(), new Image()];
-let cachePosition = 0;
+let photo_cache: PhotoCache;
+
+function deleteImage(buttonPressed: boolean) {
+    if (buttonPressed) {
+        leftSwipeAnimation!
+            .onFinish(() => { setNewImage(true) }, callbackOptions)    
+            .play();
+    } else {
+        setNewImage(true);
+    }
+}
+
+function check_name(filename: string) {
+    return;
+}
+
+function keepImage(buttonPressed: boolean) {
+    if (buttonPressed) {
+        rightSwipeAnimation!
+            .onFinish(() => { setNewImage(false) }, callbackOptions)
+            .play();
+    } else {
+        setNewImage(false);
+    }
+}
 
 function setNewImage(deleted: boolean) {
-    fixedPhotoUri.value = imageCache[cachePosition].src;
+    fixedPhotoUri.value = photo_cache.getPhoto();
 
-    updateCache();
+    photo_cache.updateCache(photosToCheck);
+
     comeUpAnimation!.stop();
     comeUpAnimation!
         .onFinish(() => {
@@ -39,40 +65,19 @@ function setNewImage(deleted: boolean) {
         .play();
 }
 
-function updateCache() {
-    photoToCheck[cachePosition] = photosToCheck.value.filter((obj) => {
-            return !photoToCheck.includes(obj)
-        })[Math.floor(Math.random() * (photosToCheck.value.length - 2))]
+onBeforeMount(async () => {
+    const photosToCheckPreferenceValue = await Preferences.get({ key: 'PHOTOS_TO_CHECK' });
+    photosToCheck = JSON.parse(photosToCheckPreferenceValue.value || '[]');
 
-    imageCache[cachePosition].src = Capacitor.convertFileSrc(photoToCheck[cachePosition]);
+    photo_cache = new PhotoCache(photosToCheck);
 
-    if (cachePosition != 2) {
-        cachePosition++;
-    } 
-    else {
-        cachePosition = 0;
-    }
-}
+    fixedPhotoUri.value = photo_cache.getPhoto();
 
-function deleteImage(buttonPressed: boolean) {
-    if (buttonPressed) {
-        leftSwipeAnimation!
-            .onFinish(() => { setNewImage(true) }, callbackOptions)    
-            .play();
-    } else {
-        setNewImage(true);
-    }
-}
+    photo_cache.updateCache(photosToCheck);
+});
 
-function keepImage(buttonPressed: boolean) {
-    if (buttonPressed) {
-        rightSwipeAnimation!
-            .onFinish(() => { setNewImage(false) }, callbackOptions)
-            .play();
-    } else {
-        setNewImage(false);
-    }
-}
+
+// Animation handling
 
 // Define Animations and gestures
 const image_container = ref(null);
@@ -190,26 +195,6 @@ function getStep(detail: GestureDetail, direction: boolean): number {
     }
     return Math.max(0, Math.min((detail.deltaX * -1) / windowWidth, 1));    
 }
-
-
-onBeforeMount(async () => {
-    const photosToCheckPreferenceValue = await Preferences.get({ key: 'PHOTOS_TO_CHECK' });
-    photosToCheck.value = JSON.parse(photosToCheckPreferenceValue.value || '[]');
-
-    while (photoToCheck.length < 3) {
-        photoToCheck[photoToCheck.length] = photosToCheck.value.filter((obj) => {
-            return !photoToCheck.includes(obj)
-        })[Math.floor(Math.random() * (photosToCheck.value.length - photoToCheck.length))]
-    }
-
-    for (let photo in photoToCheck){
-        imageCache[photo].src = Capacitor.convertFileSrc(photoToCheck[photo]);
-    }
-
-    fixedPhotoUri.value = imageCache[0].src;
-
-    updateCache();
-});
 
 </script>
 
