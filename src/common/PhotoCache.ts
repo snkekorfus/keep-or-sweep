@@ -11,42 +11,62 @@ export class PhotoCache {
 
 
     constructor(photosToCheck: PhotoFile[]) {
-        while (this.photosToCheckCache.length < 3) {
-            this.photosToCheckCache[this.photosToCheckCache.length] = photosToCheck.filter((obj) => {
-                return !this.photosToCheckCache.map((photo) => {
-                    return photo.uri;
-                }).includes(obj.uri);
-            })[Math.floor(Math.random() * (photosToCheck.length - this.photosToCheckCache.length))]
+        while (this.photosToCheckCache.length < 3 && this.cleanPhotosToCheckFromCache(photosToCheck).length != 0) {
+            this.photosToCheckCache[this.photosToCheckCache.length] = this.getUncheckedImageForCache(photosToCheck);
         }
     
-        for (let photo in this.photosToCheckCache){
-            this.imageCache[photo].src = Capacitor.convertFileSrc(this.photosToCheckCache[photo].uri);
+        for (const photo in this.photosToCheckCache){
+            this.imageCache[photo].src = Capacitor.convertFileSrc(this.photosToCheckCache[photo].Data);
         }
     }
 
-    getPhoto(): string {
-        return this.imageCache[this.cachePosition].src;
+    getCurrentPhotoFile(): PhotoFile {
+        return this.photosToCheckCache[0];
     }
 
+    getCachedPhoto(): string {
+        return this.imageCache[0].src;
+    }
 
     // TODO: Add swiped image to swipedImagesStack
     updateCache(photosToCheck: PhotoFile[]): void {
-        this.swipedImagesStack.push(this.photosToCheckCache[this.cachePosition])
-
-        this.photosToCheckCache[this.cachePosition] = photosToCheck.filter((obj) => {
-            return !this.photosToCheckCache.map((photo) => {
-                return photo.uri;
-            }).includes(obj.uri);
-        })[Math.floor(Math.random() * (photosToCheck.length - this.photosToCheckCache.length))]
-
-
-        this.imageCache[this.cachePosition].src = Capacitor.convertFileSrc(this.photosToCheckCache[this.cachePosition].uri);
-
-        if (this.cachePosition != 2) {
-            this.cachePosition++;
-        } else {
-            this.cachePosition = 0;
+        if (this.photosToCheckCache.length != 0) {
+            this.swipedImagesStack.push(this.photosToCheckCache[0]);
+            this.photosToCheckCache.shift();
+            this.imageCache.shift();
         }
+
+        console.log("Hey");
+        console.log(photosToCheck);
+        console.log(this.cleanPhotosToCheckFromCache(photosToCheck).length);
+
+        if(this.cleanPhotosToCheckFromCache(photosToCheck).length != 0) {
+            this.photosToCheckCache[2] = this.getUncheckedImageForCache(photosToCheck);
+            this.imageCache[2].src = Capacitor.convertFileSrc(this.photosToCheckCache[2].URI);
+        }
+    }
+
+    private getUncheckedImageForCache(photosToCheck: PhotoFile[]): PhotoFile {
+        const cleanPhotosToCheck = this.cleanPhotosToCheckFromCache(photosToCheck);
+
+        return cleanPhotosToCheck[Math.floor(Math.random() * (photosToCheck.length - this.photosToCheckCache.length))];
+
+    }
+
+    private cleanPhotosToCheckFromCache(photosToCheck: PhotoFile[]): PhotoFile[] {
+        console.log("Moin");
+        console.log(photosToCheck);
+
+        photosToCheck = photosToCheck.filter((obj) => {
+            return !this.photosToCheckCache.map((photo) => {
+                return photo.Data;
+            }).includes(obj.Data)
+        });
+
+        console.log("Tach");
+        console.log(photosToCheck);
+
+        return photosToCheck;
     }
 
     revertCache(): void {

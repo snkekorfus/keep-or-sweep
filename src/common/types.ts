@@ -1,4 +1,5 @@
 export interface PhotoFile {
-    "name": string,
-    "uri": string
+    "Data": string,
+    "URI": string,
+    "Name": string
 }

@@ -10,20 +10,25 @@
 <script setup lang="ts">
 import { onMounted, ref, defineExpose, onBeforeMount } from '@vue/runtime-core';
 import { createAnimation, Animation, AnimationCallbackOptions, createGesture, GestureDetail } from '@ionic/vue';
-import { Capacitor } from '@capacitor/core';
-import { Preferences } from '@capacitor/preferences';
+
+import { getImageToCheckPreference, deleteImageStoreHandler } from '../store';
 
 import { PhotoFile } from '@/common/types';
 import { PhotoCache } from '@/common/PhotoCache';
+import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
 
 defineExpose({ setNewImage, deleteImage, keepImage });
 
 const fixedPhotoUri = ref<string | null>(null);
-let photosToCheck: PhotoFile[] = [];
 
 let photo_cache: PhotoCache;
 
-function deleteImage(buttonPressed: boolean) {
+async function deleteImage(buttonPressed: boolean) {
+
+    const photosToCheck: PhotoFile[] = await deleteImageStoreHandler(photo_cache.getCurrentPhotoFile());
+
+    photo_cache.updateCache(photosToCheck);
+    
     if (buttonPressed) {
         leftSwipeAnimation!
             .onFinish(() => { setNewImage(true) }, callbackOptions)    
@@ -33,11 +38,13 @@ function deleteImage(buttonPressed: boolean) {
     }
 }
 
-function check_name(filename: string) {
-    return;
-}
 
-function keepImage(buttonPressed: boolean) {
+async function keepImage(buttonPressed: boolean) {
+
+    const photosToCheck: PhotoFile[] = await getImageToCheckPreference();
+
+    photo_cache.updateCache(photosToCheck);
+
     if (buttonPressed) {
         rightSwipeAnimation!
             .onFinish(() => { setNewImage(false) }, callbackOptions)
@@ -48,9 +55,7 @@ function keepImage(buttonPressed: boolean) {
 }
 
 function setNewImage(deleted: boolean) {
-    fixedPhotoUri.value = photo_cache.getPhoto();
-
-    photo_cache.updateCache(photosToCheck);
+    fixedPhotoUri.value = photo_cache.getCachedPhoto();
 
     comeUpAnimation!.stop();
     comeUpAnimation!
@@ -66,14 +71,11 @@ function setNewImage(deleted: boolean) {
 }
 
 onBeforeMount(async () => {
-    const photosToCheckPreferenceValue = await Preferences.get({ key: 'PHOTOS_TO_CHECK' });
-    photosToCheck = JSON.parse(photosToCheckPreferenceValue.value || '[]');
+    const photosToCheck: PhotoFile[] = await getImageToCheckPreference();
 
     photo_cache = new PhotoCache(photosToCheck);
 
-    fixedPhotoUri.value = photo_cache.getPhoto();
-
-    photo_cache.updateCache(photosToCheck);
+    fixedPhotoUri.value = photo_cache.getCachedPhoto();
 });
 
 
@@ -146,7 +148,6 @@ onMounted(() => {
         
         },
         onEnd: (detail) => {
-            console.log("We are in the endgame now");
             if (!started) { return; }
             
             swipeGesture.enable(false);
