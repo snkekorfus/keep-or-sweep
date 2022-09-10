@@ -15,19 +15,27 @@ import { GetResult, Preferences } from '@capacitor/preferences';
 
 import AndroidMediaStore from '../plugins/AndroidMediaStorePlugin';
 import { PhotoFile } from '@/common/types';
+import { getImageToCheckPreference, getDeletedImagePreference } from "@/store";
 
 const props = defineProps(['isLoading']);
 const emit = defineEmits(['finishedLoading']);
 
 
 onMounted(async () => {
-    document.addEventListener('deviceready', async () => { 
-    
+    //TODO: Add the same logic for accepted images
+    document.addEventListener('deviceready', async () => {
+
+        let currentPhotosToCheckPreferenceValues: PhotoFile[] = await getImageToCheckPreference();
+        let deletedImagesPreferenceValues: PhotoFile[] = await getDeletedImagePreference();
+
         let images: PhotoFile[];
         images = JSON.parse((await AndroidMediaStore.getAllImageURIs()).value);
 
-        const currentPhotosToCheckPreference: GetResult = await Preferences.get({ key: 'IMAGES_TO_CHECK' });
-        let currentPhotosToCheckPreferenceValues: PhotoFile[] = JSON.parse(currentPhotosToCheckPreference.value || "[]");
+        images = images.filter((image) => {
+           return !deletedImagesPreferenceValues.map((currentPhoto) => {
+                return currentPhoto.Data;
+            }).includes(image.Data);
+        });
 
         images = images.filter((image) => {
            return !currentPhotosToCheckPreferenceValues.map((currentPhoto) => {

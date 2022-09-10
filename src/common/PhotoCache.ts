@@ -36,12 +36,9 @@ export class PhotoCache {
             this.imageCache.shift();
         }
 
-        console.log("Hey");
-        console.log(photosToCheck);
-        console.log(this.cleanPhotosToCheckFromCache(photosToCheck).length);
-
         if(this.cleanPhotosToCheckFromCache(photosToCheck).length != 0) {
             this.photosToCheckCache[2] = this.getUncheckedImageForCache(photosToCheck);
+            this.imageCache[2] = new Image();
             this.imageCache[2].src = Capacitor.convertFileSrc(this.photosToCheckCache[2].URI);
         }
     }
@@ -54,17 +51,11 @@ export class PhotoCache {
     }
 
     private cleanPhotosToCheckFromCache(photosToCheck: PhotoFile[]): PhotoFile[] {
-        console.log("Moin");
-        console.log(photosToCheck);
-
         photosToCheck = photosToCheck.filter((obj) => {
             return !this.photosToCheckCache.map((photo) => {
                 return photo.Data;
             }).includes(obj.Data)
         });
-
-        console.log("Tach");
-        console.log(photosToCheck);
 
         return photosToCheck;
     }

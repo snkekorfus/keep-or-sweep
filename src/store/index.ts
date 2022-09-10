@@ -26,6 +26,13 @@ export async function removeImageFromToCheckPreference(image: PhotoFile): Promis
     return imagesToCheckValue;
 }
 
+export async function getDeletedImagePreference(): Promise<PhotoFile[]> {
+    const deletedImagesPreference: GetResult = await Preferences.get({key: "DELETE_IMAGES"});
+    const deletedImagesValue: PhotoFile[] = JSON.parse(deletedImagesPreference.value || "[]");
+
+    return deletedImagesValue;
+}
+
 export async function deleteImageStoreHandler(image: PhotoFile): Promise<PhotoFile[]>  {
 
     const deletedImagesPreferences: GetResult = await Preferences.get({key: "DELETE_IMAGES"});
