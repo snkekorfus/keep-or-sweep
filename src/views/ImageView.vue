@@ -8,16 +8,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, defineExpose, onBeforeMount } from '@vue/runtime-core';
+import { onMounted, ref, defineExpose, onBeforeMount, defineEmits } from '@vue/runtime-core';
 import { createAnimation, Animation, AnimationCallbackOptions, createGesture, GestureDetail } from '@ionic/vue';
 
-import { getImageToCheckPreference, deleteImageStoreHandler } from '../store';
+import { getImageToCheckPreference, deleteImageStoreHandler, keepImageStoreHandler } from '../store';
 
 import { PhotoFile } from '@/common/types';
 import { PhotoCache } from '@/common/PhotoCache';
 import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
 
 defineExpose({ setNewImage, deleteImage, keepImage });
+const emit = defineEmits(["cleanedUp", "lastSwipe"]);
 
 const fixedPhotoUri = ref<string | null>(null);
 
@@ -41,7 +42,7 @@ async function deleteImage(buttonPressed: boolean) {
 
 async function keepImage(buttonPressed: boolean) {
 
-    const photosToCheck: PhotoFile[] = await getImageToCheckPreference();
+    const photosToCheck: PhotoFile[] = await keepImageStoreHandler(photo_cache.getCurrentPhotoFile());
 
     photo_cache.updateCache(photosToCheck);
 
@@ -55,11 +56,20 @@ async function keepImage(buttonPressed: boolean) {
 }
 
 function setNewImage(deleted: boolean) {
+    
+    if (photo_cache.photosToCheckCache.length == 0) {
+        emit("lastSwipe");
+        return;
+    }
+
     fixedPhotoUri.value = photo_cache.getCachedPhoto();
 
     comeUpAnimation!.stop();
     comeUpAnimation!
         .onFinish(() => {
+            if (photo_cache.photosToCheckCache.length == 1) {
+                emit("cleanedUp");
+            }
             if (deleted) {
                 leftSwipeAnimation!.stop();
             }
@@ -75,7 +85,9 @@ onBeforeMount(async () => {
 
     photo_cache = new PhotoCache(photosToCheck);
 
-    fixedPhotoUri.value = photo_cache.getCachedPhoto();
+    if (photo_cache.photosToCheckCache.length != 0) {
+        fixedPhotoUri.value = photo_cache.getCachedPhoto();
+    }
 });
 
 
