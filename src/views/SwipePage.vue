@@ -7,7 +7,7 @@
         </ion-header>
 
         <ion-content scroll="false">
-            <image-view ref="imageView" class="image_view" @cleaned-up="cleanedUp = true" @last-swipe="removeButtons"/>
+            <image-view ref="imageView" class="image_view" @cleaned-up="cleanedUp = true" @last-swipe="removeSwipeButtons" @swiped="canUndo = true" @no-more-undos="canUndo = false"/>
             <div class="finished_container" v-if="cleanedUp">
                 <div class="logo_container">
                     <img src="/assets/icon/icon.png"/>
@@ -23,6 +23,15 @@
                 </ion-fab-button>
             </ion-fab>
 
+            <div class="undoButtonContainer">
+                <Transition name="bounce">
+                    <ion-button shape="round" color="tertiary" @click="undoSwipe" v-if="canUndo">
+                        <ion-icon slot="start" :icon="reloadOutline" size="large"></ion-icon>
+                        Undo
+                    </ion-button>
+                </Transition>
+            </div>
+
             <ion-fab slot="fixed" vertical="bottom" horizontal="end"  v-if="showButtons">
                 <ion-fab-button color="success" @click="keepImage" id="keepButton">
                     <ion-icon :icon="heart" size="large"></ion-icon>
@@ -34,8 +43,8 @@
 
 <script setup lang="ts">
 import { onBeforeMount, onMounted, ref } from '@vue/runtime-core';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, IonFab, IonFabButton, IonIcon, createAnimation, Animation } from '@ionic/vue';
-import { heart, trash } from "ionicons/icons";
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, IonFab, IonFabButton, IonButton, IonIcon, createAnimation, Animation } from '@ionic/vue';
+import { heart, trash, reloadOutline } from "ionicons/icons";
 import ImageView from "./ImageView.vue";
 import { PhotoFile } from '@/common/types';
 import { getImageToCheckPreference } from '@/store';
@@ -43,6 +52,7 @@ import { getImageToCheckPreference } from '@/store';
 const imageView = ref();
 const cleanedUp = ref(true);
 const showButtons = ref(false)
+const canUndo = ref(false)
 
 function deleteImage(): void {
     imageView.value.deleteImage(true);
@@ -52,7 +62,11 @@ function keepImage(): void {
     imageView.value.keepImage(true);
 }
 
-function removeButtons(): void {
+function undoSwipe(): void {
+    imageView.value.undoSwipe();
+}
+
+function removeSwipeButtons(): void {
     const keepButton = document.querySelector("#keepButton");
     const sweepButton = document.querySelector("#sweepButton");
     
@@ -115,5 +129,34 @@ onBeforeMount(async () => {
 .status_container {
     display: flex;
     justify-content: center;
+}
+
+.undoButtonContainer {
+    z-index: 3;
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    bottom: 10px;
+    width: 100%;
+    height: 56px;
+}
+
+.bounce-enter-active {
+  animation: bounce-in 0.35s;
+}
+.bounce-leave-active {
+  animation: bounce-in 0.35s reverse;
+}
+@keyframes bounce-in {
+  0% {
+    transform: translateY(130px);
+  }
+  20% {
+    transform: translateY(-30px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 </style>

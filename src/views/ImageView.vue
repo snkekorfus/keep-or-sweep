@@ -9,16 +9,16 @@
 
 <script setup lang="ts">
 import { onMounted, ref, defineExpose, onBeforeMount, defineEmits } from '@vue/runtime-core';
-import { createAnimation, Animation, AnimationCallbackOptions, createGesture, GestureDetail } from '@ionic/vue';
+import { createAnimation, Animation, AnimationDirection, AnimationCallbackOptions, createGesture, GestureDetail } from '@ionic/vue';
 
 import { getImageToCheckPreference, deleteImageStoreHandler, keepImageStoreHandler } from '../store';
 
-import { PhotoFile } from '@/common/types';
+import { PhotoFile, SwipedStack } from '@/common/types';
 import { PhotoCache } from '@/common/PhotoCache';
 import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
 
-defineExpose({ setNewImage, deleteImage, keepImage });
-const emit = defineEmits(["cleanedUp", "lastSwipe"]);
+defineExpose({ setNewImage, deleteImage, keepImage, undoSwipe });
+const emit = defineEmits(["cleanedUp", "lastSwipe", "swiped", "noMoreUndos"]);
 
 const fixedPhotoUri = ref<string | null>(null);
 
@@ -28,7 +28,7 @@ async function deleteImage(buttonPressed: boolean) {
 
     const photosToCheck: PhotoFile[] = await deleteImageStoreHandler(photo_cache.getCurrentPhotoFile());
 
-    photo_cache.updateCache(photosToCheck);
+    photo_cache.updateCache(photosToCheck, SwipedStack.Sweep);
     
     if (buttonPressed) {
         leftSwipeAnimation!
@@ -44,7 +44,7 @@ async function keepImage(buttonPressed: boolean) {
 
     const photosToCheck: PhotoFile[] = await keepImageStoreHandler(photo_cache.getCurrentPhotoFile());
 
-    photo_cache.updateCache(photosToCheck);
+    photo_cache.updateCache(photosToCheck, SwipedStack.Keep);
 
     if (buttonPressed) {
         rightSwipeAnimation!
@@ -56,6 +56,9 @@ async function keepImage(buttonPressed: boolean) {
 }
 
 function setNewImage(deleted: boolean) {
+    if (photo_cache.getSwipedImageStack().length > 0) {
+        emit("swiped");
+    }
     
     if (photo_cache.photosToCheckCache.length == 0) {
         emit("lastSwipe");
@@ -78,6 +81,18 @@ function setNewImage(deleted: boolean) {
             }
         }, callbackOptions)
         .play();
+}
+
+// Undo a keep or sweep Swipe by restoring a swiped picture from the cache
+// TODO: Add animations (but first get it to work)
+function undoSwipe(): void {
+    photo_cache.revertCache();
+    
+    fixedPhotoUri.value = photo_cache.getCachedPhoto();
+
+    if (photo_cache.getSwipedImageStack().length == 0) {
+        emit("noMoreUndos");
+    }
 }
 
 onBeforeMount(async () => {

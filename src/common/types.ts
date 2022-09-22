@@ -3,3 +3,13 @@ export interface PhotoFile {
     "URI": string,
     "Name": string
 }
+
+export interface SwipedPhotoFile {
+    "PhotoFile": PhotoFile,
+    "Stack": SwipedStack
+}
+
+export enum SwipedStack {
+    Keep,
+    Sweep
+}

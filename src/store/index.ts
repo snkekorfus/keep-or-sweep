@@ -10,7 +10,7 @@ export async function getImageToCheckPreference(): Promise<PhotoFile[]> {
 }
 
 export async function getDeletedImagePreference(): Promise<PhotoFile[]> {
-    const deletedImagesPreference: GetResult = await Preferences.get({key: "DELETE_IMAGES"});
+    const deletedImagesPreference: GetResult = await Preferences.get({key: "DELETED_IMAGES"});
     const deletedImagesValue: PhotoFile[] = JSON.parse(deletedImagesPreference.value || "[]");
 
     return deletedImagesValue;
@@ -33,16 +33,58 @@ export async function removeImageFromToCheckPreference(image: PhotoFile): Promis
     Preferences.set({
         key: "IMAGES_TO_CHECK",
         value: JSON.stringify(imagesToCheckValue)
-    })
+    });
 
     return imagesToCheckValue;
 }
 
+export async function addImageFromToCheckPreference(image: PhotoFile): Promise<void>  {
+
+    const toCheckImagesValues: PhotoFile[] = await getImageToCheckPreference();
+
+    toCheckImagesValues.push(image);
+
+    Preferences.set({
+        key: "IMAGES_TO_CHECK",
+        value: JSON.stringify(toCheckImagesValues)
+    });
+}
+
+export async function removeImageFromKeepPreference(image: PhotoFile): Promise<PhotoFile[]> {
+    let imagesKeepValue = await getKeepedImagePreference();
+
+    imagesKeepValue = imagesKeepValue.filter((obj) => {
+        return obj.Data != image.Data;
+    });
+
+    Preferences.set({
+        key: "KEEPED_IMAGES",
+        value: JSON.stringify(imagesKeepValue)
+    })
+
+    return imagesKeepValue;
+}
+
+export async function removeImageFromSweepPreference(image: PhotoFile): Promise<PhotoFile[]> {
+    let imagesSweepValue = await getDeletedImagePreference();
+
+    imagesSweepValue = imagesSweepValue.filter((obj) => {
+        return obj.Data != image.Data;
+    });
+
+    Preferences.set({
+        key: "DELETED_IMAGES",
+        value: JSON.stringify(imagesSweepValue)
+    })
+
+    return imagesSweepValue;
+}
+
 export async function keepImageStoreHandler(image: PhotoFile): Promise<PhotoFile[]>  {
 
-    let keepedImagesValues: PhotoFile[] = await getKeepedImagePreference();
+    const keepedImagesValues: PhotoFile[] = await getKeepedImagePreference();
 
-    keepedImagesValues = keepedImagesValues.concat(image);
+    keepedImagesValues.push(image);
 
     Preferences.set({
         key: "KEEPED_IMAGES",
@@ -53,12 +95,12 @@ export async function keepImageStoreHandler(image: PhotoFile): Promise<PhotoFile
 }
 
 export async function deleteImageStoreHandler(image: PhotoFile): Promise<PhotoFile[]>  {
-    let deletedImagesValues: PhotoFile[] = await getDeletedImagePreference();
+    const deletedImagesValues: PhotoFile[] = await getDeletedImagePreference();
 
-    deletedImagesValues = deletedImagesValues.concat(image);
+    deletedImagesValues.push(image);
 
     Preferences.set({
-        key: "DELETE_IMAGES",
+        key: "DELETED_IMAGES",
         value: JSON.stringify(deletedImagesValues)
     });
 
