@@ -33,7 +33,7 @@ export class PhotoCache {
         return this.swipedImagesStack;
     }
 
-    // Update the cache if a swipe happend and put the swoped image on the swiped Image stack
+    // Update the cache if a swipe happend and put the swiped image on the swiped Image stack
     updateCache(photosToCheck: PhotoFile[], direction: SwipedStack): void {
         if (this.photosToCheckCache.length != 0) {
             this.addToUndoCache(this.photosToCheckCache[0], direction);
@@ -41,6 +41,7 @@ export class PhotoCache {
             this.imageCache.shift();
         }
 
+        // If more images in the images to check preference add a new image to the cache
         if(this.cleanPhotosToCheckFromCache(photosToCheck).length != 0) {
             this.photosToCheckCache[2] = this.getUncheckedImageForCache(photosToCheck);
             this.imageCache[2] = new Image();
@@ -60,6 +61,7 @@ export class PhotoCache {
         this.swipedImageCache[2].src = Capacitor.convertFileSrc(photo.URI);
     }
 
+    // Get a random image from the images to check preference
     private getUncheckedImageForCache(photosToCheck: PhotoFile[]): PhotoFile {
         const cleanPhotosToCheck = this.cleanPhotosToCheckFromCache(photosToCheck);
 

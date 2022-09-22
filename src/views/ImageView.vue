@@ -20,10 +20,15 @@ import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
 defineExpose({ setNewImage, deleteImage, keepImage, undoSwipe });
 const emit = defineEmits(["cleanedUp", "lastSwipe", "swiped", "noMoreUndos", "undoLastSwipe", "undoCleanedUp"]);
 
+// The file path to the currently shown image
 const fixedPhotoUri = ref<string | null>(null);
 
+// The instance of a photo_cache used throughout the component
 let photo_cache: PhotoCache;
 
+// Add image to the sweep image preference
+// Update the cache and if neccessary play the rightSwipeAnimation
+// Furthermore trigger the setNewImage function
 async function deleteImage(buttonPressed: boolean) {
 
     const photosToCheck: PhotoFile[] = await deleteImageStoreHandler(photo_cache.getCurrentPhotoFile());
@@ -40,6 +45,9 @@ async function deleteImage(buttonPressed: boolean) {
     }
 }
 
+// Add image to the keep image preference
+// Update the cache and if neccessary play the rightSwipeAnimation
+// Furthermore trigger the setNewImage function
 async function keepImage(buttonPressed: boolean) {
 
     const photosToCheck: PhotoFile[] = await keepImageStoreHandler(photo_cache.getCurrentPhotoFile());
@@ -56,6 +64,8 @@ async function keepImage(buttonPressed: boolean) {
     }
 }
 
+// Set a new image in the image view and play the animation that
+// brings the new image to the view
 function setNewImage(deleted: boolean) {
     if (photo_cache.getSwipedImageStack().length > 0) {
         emit("swiped");
@@ -87,7 +97,8 @@ function setNewImage(deleted: boolean) {
 }
 
 // Undo a keep or sweep Swipe by restoring a swiped picture from the cache
-// TODO: Add animations (but first get it to work)
+// Reverse all the animations that happened before
+// If neccessary remove the no more images view
 function undoSwipe(): void {
     const swipeStack: SwipedStack  = photo_cache.revertCache();
 
@@ -117,6 +128,7 @@ function undoSwipe(): void {
     }
 }
 
+// On undo play the swipe animation reverse
 function undoSwipeHelper(swipeStack: SwipedStack): void {
     if (swipeStack == SwipedStack.Keep) {
         rightSwipeAnimation
