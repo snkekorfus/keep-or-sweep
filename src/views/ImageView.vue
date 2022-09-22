@@ -18,7 +18,7 @@ import { PhotoCache } from '@/common/PhotoCache';
 import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
 
 defineExpose({ setNewImage, deleteImage, keepImage, undoSwipe });
-const emit = defineEmits(["cleanedUp", "lastSwipe", "swiped", "noMoreUndos"]);
+const emit = defineEmits(["cleanedUp", "lastSwipe", "swiped", "noMoreUndos", "undoLastSwipe", "undoCleanedUp"]);
 
 const fixedPhotoUri = ref<string | null>(null);
 
@@ -32,13 +32,13 @@ async function deleteImage(buttonPressed: boolean) {
     
     if (buttonPressed) {
         leftSwipeAnimation!
+            .direction("normal")
             .onFinish(() => { setNewImage(true) }, callbackOptions)    
             .play();
     } else {
         setNewImage(true);
     }
 }
-
 
 async function keepImage(buttonPressed: boolean) {
 
@@ -48,6 +48,7 @@ async function keepImage(buttonPressed: boolean) {
 
     if (buttonPressed) {
         rightSwipeAnimation!
+            .direction("normal")
             .onFinish(() => { setNewImage(false) }, callbackOptions)
             .play();
     } else {
@@ -67,7 +68,9 @@ function setNewImage(deleted: boolean) {
 
     fixedPhotoUri.value = photo_cache.getCachedPhoto();
 
-    comeUpAnimation!.stop();
+    comeUpAnimation!
+        .direction("normal")
+        .stop();
     comeUpAnimation!
         .onFinish(() => {
             if (photo_cache.photosToCheckCache.length == 1) {
@@ -86,12 +89,54 @@ function setNewImage(deleted: boolean) {
 // Undo a keep or sweep Swipe by restoring a swiped picture from the cache
 // TODO: Add animations (but first get it to work)
 function undoSwipe(): void {
-    photo_cache.revertCache();
-    
-    fixedPhotoUri.value = photo_cache.getCachedPhoto();
+    const swipeStack: SwipedStack  = photo_cache.revertCache();
+
+    if (photo_cache.photosToCheckCache.length != 1) {
+        comeUpAnimation
+        .direction("reverse")
+        .stop()
+
+        comeUpAnimation
+            .onFinish(() => {
+                fixedPhotoUri.value = photo_cache.getCachedPhoto();
+                undoSwipeHelper(swipeStack);
+            }, callbackOptions)
+            .play();
+    }
+    else {
+        undoSwipeHelper(swipeStack);
+        emit("undoLastSwipe");
+    }
+
+    if (photo_cache.photosToCheckCache.length == 2) {
+        emit("undoCleanedUp");
+    }
 
     if (photo_cache.getSwipedImageStack().length == 0) {
         emit("noMoreUndos");
+    }
+}
+
+function undoSwipeHelper(swipeStack: SwipedStack): void {
+    if (swipeStack == SwipedStack.Keep) {
+        rightSwipeAnimation
+            .direction("reverse")
+            .onFinish(() => {
+                rightSwipeAnimation
+                    .direction("normal")
+                    .stop();
+            }, callbackOptions)
+            .play();
+    }
+    else if (swipeStack == SwipedStack.Sweep) {
+        leftSwipeAnimation
+            .direction("reverse")
+            .onFinish(() => {
+                leftSwipeAnimation
+                    .direction("normal")
+                    .stop();
+            }, callbackOptions)
+            .play();
     }
 }
 
@@ -184,6 +229,7 @@ onMounted(() => {
 
             if (!direction) {
                 leftSwipeAnimation!
+                    .direction("normal")
                     .progressEnd((shouldComplete) ? 1 : 0, step)
                     .onFinish(() => { 
                         if (shouldComplete) {
@@ -196,6 +242,7 @@ onMounted(() => {
             }
             else if (direction) {
                 rightSwipeAnimation!
+                    .direction("normal")
                     .progressEnd((shouldComplete) ? 1 : 0, step)
                     .onFinish(() => { 
                         if (shouldComplete) {

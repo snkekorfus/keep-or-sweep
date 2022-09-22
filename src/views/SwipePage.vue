@@ -7,7 +7,7 @@
         </ion-header>
 
         <ion-content scroll="false">
-            <image-view ref="imageView" class="image_view" @cleaned-up="cleanedUp = true" @last-swipe="removeSwipeButtons" @swiped="canUndo = true" @no-more-undos="canUndo = false"/>
+            <image-view ref="imageView" class="image_view" @cleaned-up="cleanedUp = true" @undo-cleaned-up="cleanedUp = false" @last-swipe="showButtons = false" @undo-last-swipe="showButtons = true" @swiped="canUndo = true" @no-more-undos="canUndo = false"/>
             <div class="finished_container" v-if="cleanedUp">
                 <div class="logo_container">
                     <img src="/assets/icon/icon.png"/>
@@ -17,11 +17,13 @@
                 </div>
             </div>
 
-            <ion-fab slot="fixed" vertical="bottom" horizontal="start" v-if="showButtons">
-                <ion-fab-button color="danger" @click="deleteImage" id="sweepButton">
-                    <ion-icon :icon="trash" size="large"></ion-icon>
-                </ion-fab-button>
-            </ion-fab>
+            <Transition name="swipe-button">
+                <ion-fab slot="fixed" vertical="bottom" horizontal="start" v-if="showButtons">
+                    <ion-fab-button color="danger" @click="deleteImage" id="sweepButton">
+                        <ion-icon :icon="trash" size="large"></ion-icon>
+                    </ion-fab-button>
+                </ion-fab>
+            </Transition>
 
             <div class="undoButtonContainer">
                 <Transition name="bounce">
@@ -32,11 +34,13 @@
                 </Transition>
             </div>
 
-            <ion-fab slot="fixed" vertical="bottom" horizontal="end"  v-if="showButtons">
-                <ion-fab-button color="success" @click="keepImage" id="keepButton">
-                    <ion-icon :icon="heart" size="large"></ion-icon>
-                </ion-fab-button>
-            </ion-fab>
+            <Transition name="swipe-button">
+                <ion-fab slot="fixed" vertical="bottom" horizontal="end"  v-if="showButtons">
+                    <ion-fab-button color="success" @click="keepImage" id="keepButton">
+                        <ion-icon :icon="heart" size="large"></ion-icon>
+                    </ion-fab-button>
+                </ion-fab>
+            </Transition>
         </ion-content>
     </ion-page>
 </template>
@@ -64,25 +68,6 @@ function keepImage(): void {
 
 function undoSwipe(): void {
     imageView.value.undoSwipe();
-}
-
-function removeSwipeButtons(): void {
-    const keepButton = document.querySelector("#keepButton");
-    const sweepButton = document.querySelector("#sweepButton");
-    
-    let removeButtonsAnimation: Animation = createAnimation()
-    .addElement(keepButton)
-    .addElement(sweepButton)
-    .duration(350)
-    .iterations(1)
-    .keyframes([
-        {offset: 0, transform: 'translateY(0px)'},
-        {offset: 0.2, transform: 'translateY(-30px)'},
-        {offset: 1, transform: 'translateY(100px)'},
-    ])
-    .onFinish(() => showButtons.value = false);
-
-    removeButtonsAnimation.play();
 }
 
 onBeforeMount(async () => {
@@ -140,6 +125,14 @@ onBeforeMount(async () => {
     bottom: 10px;
     width: 100%;
     height: 56px;
+}
+
+.swipe-button-leave-active {
+    animation: bounce-in 0.35s reverse;
+}
+
+.swipe-button-enter-active {
+    animation: bounce-in 0.35s;
 }
 
 .bounce-enter-active {

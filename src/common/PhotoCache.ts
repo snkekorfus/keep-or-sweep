@@ -79,7 +79,7 @@ export class PhotoCache {
     }
 
     // If the Undo button was pressed revert the images from the cache
-    revertCache(): void {
+    revertCache(): SwipedStack | undefined {
         if (this.swipedImagesStack.length > 0) {
             // Get the last elements from the stacks for swiped photos and their loaded elements in cache
             const tempCachedPhoto = this.swipedImagesStack.pop();
@@ -111,7 +111,10 @@ export class PhotoCache {
                 this.imageCache.pop();
             }
             this.imageCache.unshift(tempImage!);
+
+            return tempCachedPhoto?.Stack;
         }
+        return;
     }
 }
 
