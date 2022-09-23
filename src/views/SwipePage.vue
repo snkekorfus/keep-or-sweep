@@ -80,6 +80,8 @@ function undoSwipe(): void {
 async function callTrashRequest() {
     const deletedImages: PhotoFile[] = await getDeletedImagePreference();
 
+    if (deletedImages.length == 0) {return;}
+
     const URIs = deletedImages.map((image) => {
         return image.URI;
     });
@@ -90,6 +92,7 @@ async function callTrashRequest() {
 
 }
 
+// TODO: RESET CACHE
 async function resumeAfterTrashRequest(state: AppState) {
     if (state.isActive) {
         let images: PhotoFile[];
@@ -105,6 +108,7 @@ async function resumeAfterTrashRequest(state: AppState) {
         if (images.length == 0) {
             resetImageFromSweepPreference();
             canUndo.value = false;
+            imageView.value.resetUndoCache();
         }
 
         App.removeAllListeners();

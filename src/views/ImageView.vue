@@ -16,7 +16,7 @@ import { getImageToCheckPreference, deleteImageStoreHandler, keepImageStoreHandl
 import { PhotoFile, SwipedStack } from '@/common/types';
 import { PhotoCache } from '@/common/PhotoCache';
 
-defineExpose({ setNewImage, deleteImage, keepImage, undoSwipe });
+defineExpose({ setNewImage, deleteImage, keepImage, undoSwipe,resetUndoCache });
 const emit = defineEmits(["cleanedUp", "lastSwipe", "swiped", "noMoreUndos", "undoLastSwipe", "undoCleanedUp"]);
 
 // The file path to the currently shown image
@@ -149,6 +149,10 @@ function undoSwipeHelper(swipeStack: SwipedStack): void {
             }, callbackOptions)
             .play();
     }
+}
+
+function resetUndoCache(): void {
+    photo_cache.resetCache();
 }
 
 onBeforeMount(async () => {

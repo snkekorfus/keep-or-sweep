@@ -118,5 +118,10 @@ export class PhotoCache {
         }
         return;
     }
+
+    resetCache() {
+        this.swipedImagesStack = [];
+        this.swipedImageCache = [new Image(), new Image(), new Image()];
+    }
 }
 
