@@ -3,6 +3,11 @@
         <ion-header>
             <ion-toolbar>
                 <ion-title>Keep or Sweep 🧹</ion-title>
+                <ion-buttons slot="end">
+                    <ion-button @click="callTrashRequest">
+                        <ion-icon slot="icon-only" :icon="trash"></ion-icon>
+                    </ion-button>
+                </ion-buttons>
             </ion-toolbar>
         </ion-header>
 
@@ -47,11 +52,13 @@
 
 <script setup lang="ts">
 import { onBeforeMount, onMounted, ref } from '@vue/runtime-core';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, IonFab, IonFabButton, IonButton, IonIcon, createAnimation, Animation } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, IonFab, IonFabButton, IonButton, IonButtons, IonIcon, createAnimation, Animation } from '@ionic/vue';
 import { heart, trash, reloadOutline } from "ionicons/icons";
 import ImageView from "./ImageView.vue";
 import { PhotoFile } from '@/common/types';
-import { getImageToCheckPreference } from '@/store';
+import { getImageToCheckPreference, getDeletedImagePreference, resetImageFromSweepPreference } from '@/store';
+import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
+import { App, AppState } from '@capacitor/app';
 
 const imageView = ref();
 const cleanedUp = ref(true);
@@ -70,6 +77,40 @@ function undoSwipe(): void {
     imageView.value.undoSwipe();
 }
 
+async function callTrashRequest() {
+    const deletedImages: PhotoFile[] = await getDeletedImagePreference();
+
+    const URIs = deletedImages.map((image) => {
+        return image.URI;
+    });
+
+    await App.addListener("appStateChange", resumeAfterTrashRequest);
+
+    const result: string = (await AndroidMediaStore.createTrashRequest({URIs: URIs})).value;
+
+}
+
+async function resumeAfterTrashRequest(state: AppState) {
+    if (state.isActive) {
+        let images: PhotoFile[];
+        images = JSON.parse((await AndroidMediaStore.getAllImageURIs()).value);
+        const deletedImages: PhotoFile[] = await getDeletedImagePreference();
+
+        images = images.filter((image) => {
+            return deletedImages.map((deletedImage) => {
+                return deletedImage.Data;
+            }).includes(image.Data);
+        });
+
+        if (images.length == 0) {
+            resetImageFromSweepPreference();
+            canUndo.value = false;
+        }
+
+        App.removeAllListeners();
+    }
+}
+    
 onBeforeMount(async () => {
     const photosToCheck: PhotoFile[] = await getImageToCheckPreference();
 
@@ -78,8 +119,6 @@ onBeforeMount(async () => {
         showButtons.value = true;
     }
 });
-
-
 </script>
 
 <style scoped>

@@ -4,6 +4,6 @@ export interface AndroidMediaStorePlugin {
 
     getAllImageURIs(): Promise<{value: string}>;
 
-    createTrashRequest(options: {URI: string}): Promise<void>;
+    createTrashRequest(options: {URIs: string[]}): Promise<{value: string}>;
 
 }

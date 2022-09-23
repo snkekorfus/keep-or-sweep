@@ -15,7 +15,6 @@ import { getImageToCheckPreference, deleteImageStoreHandler, keepImageStoreHandl
 
 import { PhotoFile, SwipedStack } from '@/common/types';
 import { PhotoCache } from '@/common/PhotoCache';
-import AndroidMediaStore from '@/plugins/AndroidMediaStorePlugin';
 
 defineExpose({ setNewImage, deleteImage, keepImage, undoSwipe });
 const emit = defineEmits(["cleanedUp", "lastSwipe", "swiped", "noMoreUndos", "undoLastSwipe", "undoCleanedUp"]);

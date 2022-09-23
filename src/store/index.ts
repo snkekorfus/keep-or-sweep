@@ -80,6 +80,10 @@ export async function removeImageFromSweepPreference(image: PhotoFile): Promise<
     return imagesSweepValue;
 }
 
+export async function resetImageFromSweepPreference(): Promise<void> {
+    Preferences.remove({key: "DELETED_IMAGES"});
+}
+
 export async function keepImageStoreHandler(image: PhotoFile): Promise<PhotoFile[]>  {
 
     const keepedImagesValues: PhotoFile[] = await getKeepedImagePreference();

@@ -31,18 +31,23 @@ async function checkForImages() {
     let images: PhotoFile[];
     images = JSON.parse((await AndroidMediaStore.getAllImageURIs()).value);
 
+    console.log(images);
+
+    // Remove deleted images from the set of toCheckImages
     images = images.filter((image) => {
        return !deletedImagesPreferenceValues.map((currentPhoto) => {
             return currentPhoto.Data;
         }).includes(image.Data);
     });
 
+    // Remove keeped images from the set of toCheckImages
     images = images.filter((image) => {
        return !keepedImagesPreferenceValues.map((currentPhoto) => {
             return currentPhoto.Data;
         }).includes(image.Data);
     });
 
+    // Remove images that are already in the set of toCheckImages
     images = images.filter((image) => {
        return !currentPhotosToCheckPreferenceValues.map((currentPhoto) => {
             return currentPhoto.Data;
