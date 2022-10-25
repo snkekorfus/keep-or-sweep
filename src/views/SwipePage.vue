@@ -4,6 +4,9 @@
             <ion-toolbar>
                 <ion-title>Keep or Sweep 🧹</ion-title>
                 <ion-buttons slot="end">
+                    <ion-button router-link="/info">
+                        <ion-icon slot="icon-only" :icon="informationCircleOutline"></ion-icon>
+                    </ion-button>
                     <ion-button @click="callTrashRequest">
                         <ion-icon slot="icon-only" :icon="trash"></ion-icon>
                     </ion-button>
@@ -53,7 +56,7 @@
 <script setup lang="ts">
 import { onBeforeMount, onMounted, ref } from '@vue/runtime-core';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, IonFab, IonFabButton, IonButton, IonButtons, IonIcon, createAnimation, Animation } from '@ionic/vue';
-import { heart, trash, reloadOutline } from "ionicons/icons";
+import { heart, trash, reloadOutline, informationCircleOutline } from "ionicons/icons";
 import ImageView from "./ImageView.vue";
 import { PhotoFile } from '@/common/types';
 import { getImageToCheckPreference, getDeletedImagePreference, resetImageFromSweepPreference } from '@/store';

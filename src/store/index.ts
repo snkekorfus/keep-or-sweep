@@ -81,7 +81,18 @@ export async function removeImageFromSweepPreference(image: PhotoFile): Promise<
 }
 
 export async function resetImageFromSweepPreference(): Promise<void> {
-    Preferences.remove({key: "DELETED_IMAGES"});
+    let deletedImagesCount = parseInt((await Preferences.get({key: "DELETED_IMAGES_COUNT"})).value!)
+
+    if (isNaN(deletedImagesCount)) {
+        deletedImagesCount = 0;
+    }
+    
+    Preferences.set({
+        key: "DELETED_IMAGES_COUNT",
+        value: ""+ (deletedImagesCount + (await getDeletedImagePreference()).length)
+    });
+    
+    Preferences.remove({key: "DELETED_IMAGES"}); 
 }
 
 export async function keepImageStoreHandler(image: PhotoFile): Promise<PhotoFile[]>  {
